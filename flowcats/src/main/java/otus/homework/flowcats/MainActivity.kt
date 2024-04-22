@@ -1,8 +1,13 @@
 package otus.homework.flowcats
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 class MainActivity : AppCompatActivity() {
 
@@ -14,8 +19,22 @@ class MainActivity : AppCompatActivity() {
         val view = layoutInflater.inflate(R.layout.activity_main, null) as CatsView
         setContentView(view)
 
-        catsViewModel.catsLiveData.observe(this){
-            view.populate(it)
-        }
+        catsViewModel.catsStateFlow
+            .filterNotNull()
+            .onEach { result ->
+                when (result) {
+                    is Result.Success<*> -> {
+                        val fact = result.value as? Fact
+                        if (fact != null) {
+                            view.populate(fact)
+                        }
+                    }
+
+                    is Result.Error -> {
+                        Toast.makeText(this, result.message, Toast.LENGTH_SHORT).show()
+
+                    }
+                }
+            }.launchIn(lifecycleScope)
     }
 }
